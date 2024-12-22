@@ -119,6 +119,7 @@ def verify_2fa(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
     
+@api_view(['POST'])
 def logout(request):
     response= JsonResponse({"message": "User logged out successfully."}, status=200)
     response.delete_cookie("access_token")
