@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 
-const TwoFactorAuth = ({ email }) => {
+const TwoFactorAuthVerify = ({ email }) => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -94,4 +94,4 @@ const TwoFactorAuth = ({ email }) => {
   );
 };
 
-export default TwoFactorAuth;
+export default TwoFactorAuthVerify;

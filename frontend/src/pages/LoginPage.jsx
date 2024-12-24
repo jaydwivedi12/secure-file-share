@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import api from "../services/apiConfig";
-import TwoFactorAuth from "../components/TwoFactorAuth";
+import TwoFactorAuthVerify from "../components/TwoFactorAuthVerify";
 import { MotionDiv } from "../utils/motionConfig";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 
@@ -27,7 +27,7 @@ const LoginPage = () => {
   return (
     <MotionDiv className="min-h-screen  bg-stone-50 flex justify-center items-center">
       {is2FA ? (
-        <TwoFactorAuth email={email} />
+        <TwoFactorAuthVerify email={email} />
       ) : (
         <form onSubmit={handleLogin} className="bg-white p-12 rounded-xl shadow-xl w-96 space-y-6">
           <h3 className="text-3xl font-bold text-center text-black shadow-sm">Welcome Back</h3>

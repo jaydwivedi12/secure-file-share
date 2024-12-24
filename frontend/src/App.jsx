@@ -3,6 +3,7 @@ import LoginPage from "./pages/LoginPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserDashboard from "./pages/UserDashboard";
 import NotAuthorized from "./pages/NotAuthorized";
+import SignupPage from "./pages/SignupPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 import { Routes, Route } from "react-router";
@@ -14,6 +15,7 @@ const App = () => {
           {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/not-authorized" element={<NotAuthorized />} />
+          <Route path="/signup" element={<SignupPage />} />
 
           {/* Protected Routes */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>

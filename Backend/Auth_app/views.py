@@ -19,10 +19,10 @@ def register(request):
     password = request.data.get('password')
 
     if not email or not password:
-        return JsonResponse({"error": "Email and password are required."}, status=400)
+        return JsonResponse({"success": False,"message":"Email and password are required."}, status=400)
     
     if User.objects.filter(email=email).exists():
-        return JsonResponse({"error": "Email is already registered."}, status=400)
+        return JsonResponse({"success": False,"message": "Email is already registered."}, status=400)
     
     try:
         # Create the user
@@ -42,9 +42,9 @@ def register(request):
         response= JsonResponse({
             "success": True,
             "message": "User registered successfully.",
-            "2fa_setup": {
-                "secret": user.two_factor_secret,
-                "totp_uri": totp_uri,  
+            "twoFA_setup": {
+                "email": email,
+                "totp_uri": totp_uri, 
             }
         }, status=201)
         csrf_token = get_token(request)
