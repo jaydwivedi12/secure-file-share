@@ -5,6 +5,7 @@ from django.middleware.csrf import get_token
 from django.conf import settings
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken,AccessToken
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from .models import User
 import pyotp
 
@@ -111,14 +112,14 @@ def verify_2fa(request):
         
         response.set_cookie(
              "access_token",
-              RefreshToken.for_user(user),
+              AccessToken.for_user(user),
               max_age=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
-              httponly=True,secure=True,samesite='Lax')
+              httponly=True,secure=False,samesite='Lax')
         
         response.set_cookie("refresh_token",
-                            AccessToken.for_user(user),
+                            RefreshToken.for_user(user),
                             max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
-                            httponly=True,secure=True,samesite='Lax')
+                            httponly=True,secure=False,samesite='Lax')
 
         return response
 
@@ -134,3 +135,49 @@ def logout(request):
     response.delete_cookie("refresh_token")
     response.delete_cookie("csrftoken")
     return response
+
+
+@api_view(['POST'])
+@permission_classes([])
+def verify_token_or_verify_refresh(request):
+    access_token = request.COOKIES.get('access_token')
+    refresh_token = request.COOKIES.get('refresh_token')
+
+    if not access_token or not refresh_token:
+        return JsonResponse({"success":False, "message":"Authentication credentials missing."}, status=401)
+    
+    # Verify the access token
+    try:
+        # This will raise an exception if the access token is invalid or expired
+        AccessToken(access_token)
+        return JsonResponse({"success":True, "message": "Access token is valid."}, status=200)
+    except (TokenError, InvalidToken):
+        # Access token is expired or invalid, so proceed with refresh token logic
+        pass
+    
+    # If access token is invalid, try to refresh using the refresh token
+    try:
+        # Verify the refresh token
+        refresh = RefreshToken(refresh_token)
+        
+        # Generate a new access token using the refresh token
+        new_access_token = str(refresh.access_token)
+
+        # Return the new access token as a response and set it in cookies
+        response = JsonResponse({"success":True,"message":"Token generated with refresh token"}, status=200)
+        response.set_cookie(
+            "access_token", 
+            new_access_token, 
+            max_age=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+            httponly=True,
+            secure=True,
+            samesite='Lax'
+        )
+        return response
+    except InvalidToken:
+        return JsonResponse(
+            {"success":False, "message": "Refresh token is invalid or expired. Please log in again."}, 
+            status=401
+        )
+    except Exception as e:
+        return JsonResponse({"success":False, "message" :str(e)}, status=500)
