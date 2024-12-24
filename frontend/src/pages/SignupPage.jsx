@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import api from "../services/apiConfig";
 import TwoFactorAuthGeneration from "@/components/TwoFactorAuthGeneration";
@@ -11,8 +11,19 @@ const RegisterPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isGenerate2FA, setGenerate2FA] = useState(false); 
+  const [isGenerate2FA, setGenerate2FA] = useState(false);
   const [twoFA_setup, setTwoFA_setup] = useState({});
+
+  // On component mount, restore state from local storage
+  useEffect(() => {
+    const stored2FAState = localStorage.getItem("isGenerate2FA");
+    const stored2FASetup = localStorage.getItem("twoFA_setup");
+
+    if (stored2FAState === "true" && stored2FASetup) {
+      setGenerate2FA(true);
+      setTwoFA_setup(JSON.parse(stored2FASetup));
+    }
+  }, []);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -24,19 +35,24 @@ const RegisterPage = () => {
     try {
       const response = await api.post("/auth/register/", { email, password });
       if (response.status === 201) {
-        setGenerate2FA(true); // Show the 2FA component
+        setGenerate2FA(true);
         setTwoFA_setup(response.data.twoFA_setup);
+
+        localStorage.setItem("isGenerate2FA", "true");
+        localStorage.setItem("twoFA_setup", JSON.stringify(response.data.twoFA_setup));
       }
     } catch (error) {
       console.error("Registration failed:", error);
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
 
   return (
     <MotionDiv className="min-h-screen bg-stone-50 flex justify-center items-center">
       {isGenerate2FA ? (
-        <TwoFactorAuthGeneration twoFA_setup={twoFA_setup} />
+        <TwoFactorAuthGeneration
+          twoFA_setup={twoFA_setup}
+        />
       ) : (
         <form onSubmit={handleRegister} className="bg-white p-12 rounded-xl shadow-xl w-96 space-y-6">
           <h3 className="text-3xl font-bold text-center text-black shadow-sm">Create an Account</h3>
