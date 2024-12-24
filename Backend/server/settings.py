@@ -32,7 +32,7 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost','127.0.0.1', ]
 
 
 # Application definition
@@ -48,11 +48,13 @@ INSTALLED_APPS = [
     "Auth_app",
 
     'rest_framework',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -148,3 +150,12 @@ SIMPLE_JWT={
 "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
 "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
+
+CSRF_TRUSTED_ORIGINS = ['http://localhost:3000','https://127.0.0.1']
+CSRF_COOKIE_AGE = timedelta(days=7) 
+
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000", "http://127.0.0.1:3000",
+]

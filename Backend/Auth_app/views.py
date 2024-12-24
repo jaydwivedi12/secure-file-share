@@ -1,12 +1,12 @@
 from django.contrib.auth.hashers import make_password
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie,csrf_protect
+from django.middleware.csrf import get_token
 from django.conf import settings
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken,AccessToken
 from .models import User
 import pyotp
-
 
 @ensure_csrf_cookie
 @api_view(['POST'])
@@ -39,20 +39,24 @@ def register(request):
             issuer_name="Secure File Sharing App"
         )
 
-        return JsonResponse({
+        response= JsonResponse({
+            "success": True,
             "message": "User registered successfully.",
             "2fa_setup": {
                 "secret": user.two_factor_secret,
                 "totp_uri": totp_uri,  
             }
         }, status=201)
+        csrf_token = get_token(request)
+        response.set_cookie("csrftoken",csrf_token)
+
+        return response
 
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+        return JsonResponse({"success": False,"message": str(e)}, status=500)
 
 
 
-@ensure_csrf_cookie
 @api_view(['POST'])
 @permission_classes([]) #Allow non-authenticated users to login
 def login(request):
@@ -63,19 +67,23 @@ def login(request):
     password = request.data.get('password')
 
     if not email or not password:
-        return JsonResponse({"error": "Email and password are required."}, status=400)
+        return JsonResponse({"success": False,"message": "Email and password are required."}, status=400)
     
     try:
         user = User.objects.get(email=email)
         if not user.check_password(password):
-            return JsonResponse({"error": "Invalid password."}, status=400)
+            return JsonResponse({"success": False,"message": "Invalid password."}, status=400)
         
-        return JsonResponse({"success": True,"email":email}, status=200)
+        response=JsonResponse({"success": True,"email":email}, status=200)
+        csrf_token = get_token(request)
+        response.set_cookie("csrftoken",csrf_token)
+
+        return response
 
     except User.DoesNotExist:
-        return JsonResponse({"error": "User not found."}, status=404)
+        return JsonResponse({"success": False,"message": "User not found."}, status=404)
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+        return JsonResponse({"success": False,"message": str(e)}, status=500)
     
 
 @api_view(['POST'])
@@ -88,14 +96,14 @@ def verify_2fa(request):
     email = request.data.get("email")
     token = request.data.get("token")
 
-    if not email or not token:
-        return JsonResponse({"error": "Email and token are required."}, status=400)
+    if not token:
+        return JsonResponse({"success": False,"message": "Token is required"}, status=400)
     
     try:
         user = User.objects.get(email=email)
         totp = pyotp.TOTP(user.two_factor_secret)
         if not totp.verify(token):
-            return JsonResponse({"error": "Invalid token."}, status=400)
+            return JsonResponse({"success": False,"message": "Invalid token"}, status=400)
         
         response= JsonResponse({"success": True,
                             "message": "2FA verification successful.",
@@ -104,20 +112,20 @@ def verify_2fa(request):
         response.set_cookie(
              "access_token",
               RefreshToken.for_user(user),
-              expires=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+              max_age=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
               httponly=True,secure=True,samesite='Lax')
         
         response.set_cookie("refresh_token",
                             AccessToken.for_user(user),
-                            expires=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
+                            max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
                             httponly=True,secure=True,samesite='Lax')
 
         return response
 
     except User.DoesNotExist:
-        return JsonResponse({"error": "User not found."}, status=404)
+        return JsonResponse({"success": False,"message":"User not found."}, status=404)
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+        return JsonResponse({"success": False,"message": str(e)}, status=500)
     
 @api_view(['POST'])
 def logout(request):
