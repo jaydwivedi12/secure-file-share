@@ -110,13 +110,15 @@ def verify_2fa(request):
                             "message": "2FA verification successful.",
                             "role": user.role}, status=200)
         
-        AT=AccessToken.for_user(user)
+        RT=RefreshToken.for_user(user)
+        AT=RT.access_token
         RT=RefreshToken.for_user(user)
         AT['role'] = user.role
         RT['role'] = user.role
         AT['email'] = user.email
         RT['email'] = user.email
-
+        print(AT)
+        print(RT)
         response.set_cookie(
              "access_token",
               AT,
