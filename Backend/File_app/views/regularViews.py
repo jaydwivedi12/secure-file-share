@@ -1,0 +1,101 @@
+from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes, serialization
+from ..services import KeyManagementService, FileEncryptionService
+from ..models import EncryptedFile
+import base64
+import json
+
+
+@api_view(['GET'])
+def get_public_key(request):
+    key_pair = KeyManagementService.generate_key_pair()
+    return JsonResponse({
+        'key_id': str(key_pair.id),
+        'public_key': key_pair.public_key.decode()
+    })
+
+
+@api_view(['POST'])
+def upload_file(request):
+    key_pair_id = request.POST.get('key_id')
+    encrypted_file = request.FILES.get('encrypted_file').read()
+    encrypted_key = request.FILES.get('encrypted_key').read()
+    client_iv = request.FILES.get('iv').read()
+    
+    try:
+        # Get the private key to decrypt the client's AES key
+        private_key = KeyManagementService.get_private_key(key_pair_id)
+        
+        # Decrypt the client's AES key
+        client_key = private_key.decrypt(
+            encrypted_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        
+        # Encrypt for storage using server-side encryption
+        encrypted_data, server_key, server_iv = FileEncryptionService.encrypt_for_storage(encrypted_file)
+        
+        # Store encrypted file and metadata
+        encrypted_file = EncryptedFile.objects.create(
+            user=request.user,
+            filename=request.POST.get('filename'),
+            content_type=request.POST.get('content_type'),
+            file_size=request.FILES.get('encrypted_file').size,
+            encrypted_data=encrypted_data,
+            client_iv=client_iv,
+            server_iv=server_iv,
+            server_key=server_key,
+            client_key=client_key,
+        )
+        
+        return JsonResponse({'file_id': str(encrypted_file.id), 'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+
+
+@api_view(['POST'])
+def download_file(request, file_id):
+    try:
+        # Parse client's public key from request
+        client_public_key = serialization.load_pem_public_key(
+            json.loads(request.body)['client_public_key'].encode()
+        )
+        
+        # Retrieve the encrypted file record from the database
+        encrypted_file = EncryptedFile.objects.get(id=file_id, user=request.user)
+        
+        # Decrypt the server-encrypted file
+        decrypted_data = FileEncryptionService.decrypt_from_storage(
+            encrypted_file.encrypted_data,
+            key=encrypted_file.server_key,
+            iv=encrypted_file.server_iv
+        )
+        
+        # Re-encrypt the AES key for the client using the client's public key
+        encrypted_key_for_client = client_public_key.encrypt(
+            encrypted_file.client_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        
+        # Send the decrypted file and re-encrypted key
+        return JsonResponse({
+            'encrypted_file': base64.b64encode(decrypted_data).decode(),  # Base64-encoded binary data
+            'encrypted_key': base64.b64encode(encrypted_key_for_client).decode(),
+            'iv': base64.b64encode(encrypted_file.client_iv).decode(),
+            'filename': encrypted_file.filename,
+            'content_type': encrypted_file.content_type
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
