@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     "Auth_app",
+    "File_app",
 
     'rest_framework',
     'corsheaders',
