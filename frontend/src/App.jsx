@@ -5,7 +5,7 @@ import UserDashboard from "./pages/UserDashboard";
 import SignupPage from "./pages/SignupPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
-
+import { Navigate } from "react-router";
 import { Routes, Route } from "react-router";
 
 const App = () => {
@@ -14,6 +14,7 @@ const App = () => {
         <Routes>
           {/* Public Routes */}
           <Route element={<PublicRoute />}>
+          <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
           </Route>
