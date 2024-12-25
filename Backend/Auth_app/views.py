@@ -110,14 +110,21 @@ def verify_2fa(request):
                             "message": "2FA verification successful.",
                             "role": user.role}, status=200)
         
+        AT=AccessToken.for_user(user)
+        RT=RefreshToken.for_user(user)
+        AT['role'] = user.role
+        RT['role'] = user.role
+        AT['email'] = user.email
+        RT['email'] = user.email
+
         response.set_cookie(
              "access_token",
-              AccessToken.for_user(user),
+              AT,
               max_age=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
               httponly=True,secure=False,samesite='Lax')
         
         response.set_cookie("refresh_token",
-                            RefreshToken.for_user(user),
+                            RT,
                             max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
                             httponly=True,secure=False,samesite='Lax')
 
@@ -148,9 +155,9 @@ def verify_token_or_verify_refresh(request):
     
     # Verify the access token
     try:
-        # This will raise an exception if the access token is invalid or expired
         AccessToken(access_token)
-        return JsonResponse({"success":True, "message": "Access token is valid."}, status=200)
+        decoded_token = AccessToken(access_token).payload
+        return JsonResponse({"success":True, "message": "Access token is valid.","role":decoded_token["role"]}, status=200)
     except (TokenError, InvalidToken):
         # Access token is expired or invalid, so proceed with refresh token logic
         pass
@@ -162,9 +169,10 @@ def verify_token_or_verify_refresh(request):
         
         # Generate a new access token using the refresh token
         new_access_token = str(refresh.access_token)
+        decoded_token = AccessToken(new_access_token).payload
 
         # Return the new access token as a response and set it in cookies
-        response = JsonResponse({"success":True,"message":"Token generated with refresh token"}, status=200)
+        response = JsonResponse({"success":True,"message":"Token generated with refresh token","role":decoded_token['role']}, status=200)
         response.set_cookie(
             "access_token", 
             new_access_token, 
