@@ -159,7 +159,7 @@ def verify_token_or_verify_refresh(request):
     try:
         AccessToken(access_token)
         decoded_token = AccessToken(access_token).payload
-        return JsonResponse({"success":True, "message": "Access token is valid.","role":decoded_token["role"]}, status=200)
+        return JsonResponse({"success":True, "message": "Access token is valid.","role":decoded_token["role"],'email':decoded_token["email"]}, status=200)
     except (TokenError, InvalidToken):
         # Access token is expired or invalid, so proceed with refresh token logic
         pass
@@ -174,7 +174,7 @@ def verify_token_or_verify_refresh(request):
         decoded_token = AccessToken(new_access_token).payload
 
         # Return the new access token as a response and set it in cookies
-        response = JsonResponse({"success":True,"message":"Token generated with refresh token","role":decoded_token['role']}, status=200)
+        response = JsonResponse({"success":True,"message":"Token generated with refresh token","role":decoded_token['role'],'email':decoded_token["email"]}, status=200)
         response.set_cookie(
             "access_token", 
             new_access_token, 

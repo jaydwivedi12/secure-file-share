@@ -15,7 +15,7 @@ def get_public_key(request):
     return JsonResponse({
         'key_id': str(key_pair.id),
         'public_key': key_pair.public_key.decode()
-    })
+    },status=200)
 
 
 @api_view(['POST'])
@@ -24,7 +24,6 @@ def upload_file(request):
     encrypted_file = request.FILES.get('encrypted_file').read()
     encrypted_key = request.FILES.get('encrypted_key').read()
     client_iv = request.FILES.get('iv').read()
-    
     try:
         # Get the private key to decrypt the client's AES key
         private_key = KeyManagementService.get_private_key(key_pair_id)
@@ -55,9 +54,9 @@ def upload_file(request):
             client_key=client_key,
         )
         
-        return JsonResponse({'file_id': str(encrypted_file.id), 'status': 'success'})
+        return JsonResponse({"succes":True, "message":"File upload Successfully!",'file_id': str(encrypted_file.id)},status=200)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({"succes":False, "message": str(e)}, status=500)
     
 
 
@@ -91,11 +90,29 @@ def download_file(request, file_id):
         
         # Send the decrypted file and re-encrypted key
         return JsonResponse({
+            'succes':True,
             'encrypted_file': base64.b64encode(decrypted_data).decode(),  # Base64-encoded binary data
             'encrypted_key': base64.b64encode(encrypted_key_for_client).decode(),
             'iv': base64.b64encode(encrypted_file.client_iv).decode(),
             'filename': encrypted_file.filename,
             'content_type': encrypted_file.content_type
-        })
+        },status=200)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({"succes":False, "message": str(e)}, status=500)
+
+@api_view(['GET'])
+def get_all_files(request):
+    try:
+        encrypted_files = EncryptedFile.objects.filter(user=request.user)
+        files = []
+        for file in encrypted_files:
+            files.append({
+                'file_id': str(file.id),
+                'filename': file.filename,
+                'content_type': file.content_type,
+                'file_size': file.file_size,
+                'uploaded_at': file.created_at,
+            })
+        return JsonResponse({"success":True,"data":files},status=200)
+    except Exception as e:
+        return JsonResponse({"succes":False, "message": str(e)}, status=500)
