@@ -59,6 +59,9 @@ class SecureFileCrypto {
       formData.append('iv', new Blob([iv]));
       formData.append('filename', file.name);
       formData.append('content_type', file.type);
+
+      console.log(file.type);
+      
       
       // Upload to server
       const response = await api.post('/file/upload-file/', formData);
@@ -90,7 +93,7 @@ class SecureFileCrypto {
       );
       
       // Request download
-      const response = await api.post(`/file/download/${fileId}/`, {
+      const response = await api.post(`/file/download-file/${fileId}/`, {
         client_public_key: this.arrayBufferToPem(exportedPublicKey)
       });
       
@@ -102,14 +105,18 @@ class SecureFileCrypto {
         filename,
         content_type
       } = await response.data;
-      
+  
+      const encryptedKeyBuffer = this.base64ToArrayBuffer(encrypted_key);
+      const encryptedFileBuffer = this.base64ToArrayBuffer(encrypted_file);
+      const decodediv=this.base64ToArrayBuffer(iv);
+
       // Decrypt the AES key
       const decryptedKeyBuffer = await crypto.subtle.decrypt(
         { name: 'RSA-OAEP' },
         keyPair.privateKey,
-        encrypted_key
+        encryptedKeyBuffer
       );
-      
+
       // Import the AES key
       const aesKey = await crypto.subtle.importKey(
         'raw',
@@ -121,19 +128,13 @@ class SecureFileCrypto {
       
       // Decrypt the file
       const decryptedContent = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv: new Uint8Array(iv) },
+        { name: 'AES-GCM', iv: new Uint8Array(decodediv) },
         aesKey,
-        encrypted_file
+        encryptedFileBuffer
       );
-      
-      // Create and download the file
-      const blob = new Blob([decryptedContent], { type: content_type });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+
+     const blob = new Blob([decryptedContent], { type: content_type });
+     return blob
     }
   
     // Utility methods for PEM conversion
@@ -149,6 +150,28 @@ class SecureFileCrypto {
       const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
       return `-----BEGIN PUBLIC KEY-----\n${base64}\n-----END PUBLIC KEY-----`;
     }
+
+    
+    static base64ToArrayBuffer(base64) {
+      // Remove Base64 URL encoding if it exists (optional, depending on your input format)
+      const base64String = base64.replace(/\-/g, '+').replace(/_/g, '/');
+    
+      // Decode the Base64 string into a binary string using `atob`
+      const binaryString = atob(base64String);
+    
+      // Create a new ArrayBuffer and fill it with the binary data
+      const arrayBuffer = new ArrayBuffer(binaryString.length);
+      const uint8Array = new Uint8Array(arrayBuffer);
+    
+      // Fill the Uint8Array with the decoded binary data
+      for (let i = 0; i < binaryString.length; i++) {
+        uint8Array[i] = binaryString.charCodeAt(i);
+      }
+    
+      return arrayBuffer;
+    }
+      
+    
   }
 
 

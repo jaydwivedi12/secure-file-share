@@ -1,15 +1,14 @@
 import { Button } from "@/components/ui/button"
 import { Download } from 'lucide-react'
-
+import SecureFileCrypto from "@/utils/crypto"
 
 export function DownloadFileButton({ fileId, fileName }) {
-  const handleDownload = () => {
+  const handleDownload = async () => {
     // Implement file download logic here
-    console.log(`Downloading file: ${fileId}, name: ${fileName}`)
+   
+    const blob=await SecureFileCrypto.downloadFile(fileId)
+    console.log(blob);
     
-    // Placeholder for actual download logic
-    const dummyContent = 'This is a dummy file content'
-    const blob = new Blob([dummyContent], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url

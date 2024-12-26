@@ -67,10 +67,11 @@ def download_file(request, file_id):
         client_public_key = serialization.load_pem_public_key(
             json.loads(request.body)['client_public_key'].encode()
         )
+        print(file_id)
         
         # Retrieve the encrypted file record from the database
         encrypted_file = EncryptedFile.objects.get(id=file_id, user=request.user)
-        
+
         # Decrypt the server-encrypted file
         decrypted_data = FileEncryptionService.decrypt_from_storage(
             encrypted_file.encrypted_data,
@@ -90,7 +91,7 @@ def download_file(request, file_id):
         
         # Send the decrypted file and re-encrypted key
         return JsonResponse({
-            'succes':True,
+            'success':True,
             'encrypted_file': base64.b64encode(decrypted_data).decode(),  # Base64-encoded binary data
             'encrypted_key': base64.b64encode(encrypted_key_for_client).decode(),
             'iv': base64.b64encode(encrypted_file.client_iv).decode(),

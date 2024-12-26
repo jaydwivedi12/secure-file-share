@@ -58,7 +58,7 @@ export function UploadFileBlock() {
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
                 <Upload className="w-16 h-16 mb-4 text-blue-500" />
                 <p className="mb-2 text-xl text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                <p className="text-sm text-gray-500">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
+                <p className="text-sm text-gray-500">PNG, JPG ,MP3/MP4</p>
               </div>
               <input id="dropzone-file" type="file" className="hidden" onChange={handleFileChange} />
             </Label>

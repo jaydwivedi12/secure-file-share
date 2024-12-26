@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -30,7 +29,7 @@ export function YourFilesBlock() {
             id: file.file_id,
             name: file.filename,
             size: formatFileSize(parseInt(file.file_size)),
-            type: file.content_type || 'Unknown',
+            type: file.content_type,
             uploadDate: new Date(file.uploaded_at).toLocaleString(),
             viewUsers: [], 
             downloadUsers: [], 
