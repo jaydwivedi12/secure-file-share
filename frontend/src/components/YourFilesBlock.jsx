@@ -12,6 +12,7 @@ import { DownloadFileButton } from './DownloadFileButton';
 
 import api from '../services/apiConfig';
 import formatFileSize from '../utils/formatFileSize';
+import { toast } from'react-toastify';
 
 export function YourFilesBlock() {
   const [files, setFiles] = useState([]);
@@ -44,12 +45,20 @@ export function YourFilesBlock() {
     fetchFiles();
   }, []);
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
+    const response = await api.delete(`/file/delete-file/${id}/`);
+    if (response.status === 200) {
     setFiles(files.filter(file => file.id !== id));
-  };
+    toast.success(response.data.message);
+  }
+  else {
+    toast.error(response.data.message);
+  }
+};
 
   const handleEdit = (file) => {
     setEditingFile(file);
+    console.log(file.id)
   };
 
   const handleSaveEdit = () => {

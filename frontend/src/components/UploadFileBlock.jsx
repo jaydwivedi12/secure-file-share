@@ -11,6 +11,7 @@ import Loader from './loader'
 export function UploadFileBlock() {
   const [selectedFile, setSelectedFile] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [uploadSuccess, setUploadSuccess] = useState(false)
 
   const handleFileChange = (event) => {
     if (event.target.files && event.target.files[0]) {
@@ -31,8 +32,11 @@ export function UploadFileBlock() {
       await SecureFileCrypto.uploadFile(selectedFile);
       
       setUploading(false);
+      setUploadSuccess(true);
       toast.success('File uploaded successfully!');
+      
       setSelectedFile(null);  
+
       
     } catch (error) {
       console.error('Upload failed:', error);
@@ -58,11 +62,25 @@ export function UploadFileBlock() {
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
                 <Upload className="w-16 h-16 mb-4 text-blue-500" />
                 <p className="mb-2 text-xl text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                <p className="text-sm text-gray-500">PNG, JPG ,MP3/MP4</p>
+                <p className="text-sm text-gray-500">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
               </div>
               <input id="dropzone-file" type="file" className="hidden" onChange={handleFileChange} />
             </Label>
           </div>
+        )}
+
+        {selectedFile && (
+          <motion.div 
+            className="flex items-center space-x-3 text-gray-700 bg-gray-100 p-4 rounded-lg"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            
+            <span className="text-lg font-medium">
+              {uploadSuccess ? 'Upload successful!' : selectedFile.name}
+            </span>
+          </motion.div>
         )}
 
         <Button 

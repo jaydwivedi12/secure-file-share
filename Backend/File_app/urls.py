@@ -6,4 +6,5 @@ urlpatterns = [
     path('upload-file/', regularViews.upload_file),
     path('download-file/<uuid:file_id>/', regularViews.download_file),
     path('get-all-files/', regularViews.get_all_files),
+    path('delete-file/<uuid:file_id>/', regularViews.delete_file),
 ]
