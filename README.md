@@ -1,5 +1,16 @@
 # Secure File Share
 
+## How to Start the Project:
+ ```bash
+git clone https://github.com/jaydwivedi12/secure-file-share
+cd secure-file-share
+
+#Start the application
+docker-compose up --build
+
+#Note: Make Sure to allow your browser to open self-signed Websites
+```
+
 ## How to Login
 
 ### **Test Normal User Credentials**
