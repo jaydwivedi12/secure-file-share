@@ -2,9 +2,21 @@
 
 ## How to Login
 
-To test the admin login system, you can use the following test credentials:
+### **Test Normal User Credentials**
+
+- **Email**: `email@test.com`
+- **Password**: `Abcd@1234`
+
+    <img src="./assets/forReadme/regular_user_2FA.png" alt="admin_jay_2FA.png" alt="QR Code" width="150" />
+
+1. Download and install the **Google Authenticator** app.
+2. Use the **URI** above to configure the app. Scan the URI 
+3. After logging in with the username and password, the app will generate a 6-digit OTP that you will enter to complete the login.
 
 ### **Test Admin Credentials**
+
+To test the admin login system, you can use the following test credentials:
+
 
 - **Email**: `jay@gmail.com`
 - **Password**: `Mlpnko@098`
