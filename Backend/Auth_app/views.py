@@ -2,6 +2,7 @@ from django.contrib.auth.hashers import make_password
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie,csrf_protect
 from django.middleware.csrf import get_token
+from django.contrib.auth import get_user_model
 from django.conf import settings
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken,AccessToken
@@ -191,3 +192,34 @@ def verify_token_or_verify_refresh(request):
         )
     except Exception as e:
         return JsonResponse({"success":False, "message" :str(e)}, status=500)
+    
+@api_view(['POST'])
+def change_password(request):
+    """
+    Handles password change.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({"success": False, "message": "Authentication required."}, status=401)
+
+    email = request.user
+    print(email)
+    old_password = request.data.get("currentPassword")
+    new_password = request.data.get("newPassword")
+
+    if not old_password or not new_password:
+        return JsonResponse({"success": False, "message": "Old password and new password are required."}, status=400)
+    
+    try:
+        user = User.objects.get(email=email)
+        print(user)
+
+        if not user.check_password(old_password):
+            return JsonResponse({"success": False, "message": "Invalid old password."}, status=400)
+        
+        user.set_password(new_password)
+        user.save()
+        
+        return JsonResponse({"success": True, "message": "Password changed successfully."}, status=200)
+    
+    except User.DoesNotExist:
+        return JsonResponse({"success": False, "message": "User not found."}, status=404)
