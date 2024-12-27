@@ -51,7 +51,7 @@ export default function AdminDashboard() {
         </div>
       </header>
       <div className="space-y-6">
-        <div className="py-4 flex flex-wrap items-center gap-4 md:flex-none md:justify-between">
+        <div className="py-4 flex  items-center gap-4 md:flex-none md:justify-between">
           <motion.p
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -60,7 +60,7 @@ export default function AdminDashboard() {
           >
             Hello {auth.user.email}, <TypeWriterEffect />
           </motion.p>
-          <div className="w-full md:w-auto">
+          <div className="w-full">
             <AdminSearchBar onSearch={handleSearch} />
           </div>
         </div>
