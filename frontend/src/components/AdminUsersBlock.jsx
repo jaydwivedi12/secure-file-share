@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import api from "@/services/apiConfig";
+import { toast } from "react-toastify";
 
 export function AdminUsersBlock({ searchQuery }) {
   const [users, setUsers] = useState([]);
@@ -51,9 +52,18 @@ export function AdminUsersBlock({ searchQuery }) {
       user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDeleteUser = (userId) => {
-    console.log("Deleting user:", userId);
-    setUsers(users.filter((user) => user.id !== userId));
+  const handleDeleteUser = async (email) => {
+    try {
+        const response = await api.delete(`/auth/delete-user/${email}/`);
+        if(response.status === 200) {
+            toast.success("User deleted successfully!");
+            setUsers(users.filter((user) => user.email !== email));
+        } else {
+            toast.error("Error deleting user.");
+        }
+    } catch (error) {
+        console.error(error);
+    }
   };
 
   return (
@@ -83,7 +93,7 @@ export function AdminUsersBlock({ searchQuery }) {
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.createdAt}</TableCell>
                   <TableCell>
-                    <Button variant="destructive" size="sm" onClick={() => handleDeleteUser(user.id)}>
+                    <Button variant="destructive" size="sm" onClick={() => handleDeleteUser(user.email)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>

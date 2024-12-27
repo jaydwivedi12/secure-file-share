@@ -228,12 +228,33 @@ def change_password(request):
 
 @api_view(['GET'])
 def get_all_users(request):
-    if not request.user.is_staff:
-        return JsonResponse({"success": False, "message": " Admin Authentication required."}, status=401)
+    try:
+        if not request.user.is_staff:
+            return JsonResponse({"success": False, "message": " Admin Authentication required."}, status=401)
 
-    users = User.objects.all()
-    serializer = UserSerializer(users, many=True)
-    return JsonResponse({
-        "success": True,
-        "users":serializer.data, 
-        },status=200)
+        users = User.objects.all()
+        serializer = UserSerializer(users, many=True)
+        return JsonResponse({
+            "success": True,
+            "users":serializer.data, 
+            },status=200)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+@api_view(['DELETE'])
+def delete_user(request,email):
+    try:
+        print(request.user)
+        if not request.user.is_staff:
+            return JsonResponse({"success": False, "message": "Admin Authentication required."}, status=401)
+        if request.user==email:
+            return JsonResponse({"success": False, "message": "Cannot delete yourself."}, status=400)
+        
+        user = User.objects.get(email=email)
+        print(user)
+        user.delete()
+        return JsonResponse({"success": True, "message": "User deleted successfully."}, status=200)
+    except User.DoesNotExist:
+        return JsonResponse({"success": False, "message": "User not found."}, status=404)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)

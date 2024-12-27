@@ -12,5 +12,6 @@ urlpatterns = [
 
     #for admin
     path('get-all-users/',views.get_all_users),
-    
+    path('delete-user/<str:email>/',views.delete_user),
+
 ]
