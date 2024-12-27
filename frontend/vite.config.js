@@ -1,3 +1,4 @@
+// frontend/vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -10,13 +11,18 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,
+      https: {
+        key: path.resolve(__dirname, 'ssl/private.key'),  // Corrected path
+        cert: path.resolve(__dirname, 'ssl/certificate.crt'),  // Corrected path
+      },    
     port: 3000,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
+        '/api': {
+            target: 'https://localhost',
+            changeOrigin: true,
+            secure: false
+        }
+    }
+}
 });

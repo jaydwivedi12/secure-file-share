@@ -1,10 +1,7 @@
 import axios from "axios";
 
 // Base URL configuration
-const baseURL =
-  typeof window !== "undefined" && window.location.hostname === "localhost"
-    ? "http://localhost:8000/api"
-    : "http://127.0.0.1:8000/api";
+const baseURL = 'https://localhost/api'  
 
 // Function to get a specific cookie by name
 const getCookie = (name) => {
