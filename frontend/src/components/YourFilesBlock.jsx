@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Edit, Trash } from 'lucide-react';
 import { ViewFileButton } from './ViewFileButton';
 import { DownloadFileButton } from './DownloadFileButton';
+import { ShareFileButton } from './ShareFileButton';
 
 import api from '../services/apiConfig';
 import formatFileSize from '../utils/formatFileSize';
@@ -117,15 +118,14 @@ export function YourFilesBlock() {
           <CardTitle className="text-4xl font-serif bg-yellow-100 p-4 rounded-lg">Your Files</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="max-h-[50vh] overflow-auto bg-white p-4 rounded-lg shadow-md">
+          <div className="h-[50vh] overflow-auto bg-white p-4 rounded-lg shadow-md">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>File Name</TableHead>
                   <TableHead>Size</TableHead>
-                  <TableHead>Type</TableHead>
+                  <TableHead className="px-20" >Actions</TableHead>
                   <TableHead>Upload Date</TableHead>
-                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -138,12 +138,11 @@ export function YourFilesBlock() {
                   >
                     <TableCell>{file.name}</TableCell>
                     <TableCell>{file.size}</TableCell>
-                    <TableCell>{file.type}</TableCell>
-                    <TableCell>{file.uploadDate}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <ViewFileButton fileId={file.id} fileType={file.type} fileName={file.name} />
                         <DownloadFileButton fileId={file.id} fileName={file.name} />
+                        <ShareFileButton fileId={file.id} fileName={file.name}/>
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm" onClick={() => handleEdit(file)}>
@@ -194,6 +193,7 @@ export function YourFilesBlock() {
                         </Button>
                       </div>
                     </TableCell>
+                    <TableCell>{file.uploadDate}</TableCell>
                   </motion.tr>
                 ))}
               </TableBody>

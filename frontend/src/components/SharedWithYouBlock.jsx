@@ -16,7 +16,6 @@ export function SharedWithYouBlock() {
     const fetchFiles = async () => {
       try {
         const response = await api.get(`/file/get-shared-files/`);
-        console.log("Fetched files:", response.data); // Debug log
 
       
         setFiles(
@@ -49,6 +48,7 @@ export function SharedWithYouBlock() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+        <div className="h-[50vh] overflow-auto bg-white p-4 rounded-lg shadow-md">
           <Table>
             <TableHeader>
               <TableRow>
@@ -81,6 +81,7 @@ export function SharedWithYouBlock() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </motion.div>

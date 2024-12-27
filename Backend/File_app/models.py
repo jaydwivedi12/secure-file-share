@@ -51,7 +51,6 @@ class ShareableLink(models.Model):
     file = models.ForeignKey('EncryptedFile', on_delete=models.CASCADE)  
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     expires_at = models.DateTimeField()
-    access_key = models.BinaryField()  # Encrypted AES key for this share
     max_downloads = models.IntegerField(null=True)
     download_count = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)

@@ -1,4 +1,4 @@
-from datetime import timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -234,33 +234,109 @@ def get_permissions(request,file_id):
     except Exception as e:
         return JsonResponse({"success": False, "message": str(e)}, status=500)
 
-
 @api_view(['POST'])
-def generate_share_url(request,file_id):
-    try:
-        data = json.loads(request.body)
-        expiry_hours = ('expiry_hours', 24)
-        max_downloads = data.get('max_downloads')
+def generate_share_url(request, file_id):
+    if request.method == 'POST':
+        try:
+            # Parse the incoming data
+            data = json.loads(request.body)
+            expires_at = data.get('expiryDate')
+            max_downloads = data.get('maxDownloads')
+
+            # Validate expiryDate: it should be a valid datetime string
+            if not expires_at:
+                return JsonResponse({"success": False, "message": "expiryDate is required."}, status=400)
+
+            try:
+                expires_at = expires_at + " 23:59:59"
+                print(expires_at)
+                # Convert expiryDate to a datetime object
+                expires_at = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
+            except Exception as e:
+                return JsonResponse({"success": False,"message":str(e)},status=400)
+            
+
+            # Validate maxDownloads: it should be an integer
+            if not isinstance(max_downloads, int) or max_downloads <= 0:
+                return JsonResponse({"success": False, "message": "maxDownloads should be a positive integer."}, status=400)
+
+            # Check if the EncryptedFile exists and belongs to the user
+            try:
+                file = EncryptedFile.objects.get(id=file_id, user=request.user)
+            except EncryptedFile.DoesNotExist:
+                return JsonResponse({"success": False, "message": "EncryptedFile not found."}, status=404)
+
+            # Create the ShareableLink object
+            share_link = ShareableLink.objects.create(
+                file=file,
+                created_by=request.user,
+                expires_at=expires_at,
+                max_downloads=max_downloads
+            )
+
+            # Return the response with share URL, expiry date, and max downloads
+            return JsonResponse({
+                "success": True,
+                'share_url': f"/share/{share_link.id}",
+                'expires_at': expires_at.strftime("%Y-%m-%d %H:%M:%S"),
+                'max_downloads': max_downloads
+            }, status=200)
         
-        file = EncryptedFile.objects.get(id=file_id, user=request.user)
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=500)
 
-        expires_at = timezone.now() + timedelta(hours=expiry_hours)
+@api_view(['DELETE'])
+def delete_shareable_link(request, share_link_id):
+    try:
+        # Validate shareLinkId: it should be a positive integer
+        if not share_link_id :
+            return JsonResponse({"success": False, "message": "shareLinkId is required."}, status=400)
 
-        share_link = ShareableLink.objects.create(
-            file=file,
-            created_by=request.user,
-            expires_at=expires_at,
-            max_downloads=max_downloads
-        )
+        # Check if the ShareableLink exists and belongs to the user
+        try:
+            share_link = ShareableLink.objects.get(id=share_link_id, created_by=request.user)
+        except ShareableLink.DoesNotExist:
+            return JsonResponse({"success": False, "message": "ShareableLink not found."}, status=404)
 
-        return JsonResponse({
-            "success": True,
-            'share_url': f"/share/{share_link.id}",
-            'expires_at': expires_at,
-            'max_downloads': max_downloads
-        },status=200)
+        share_link.delete()
+
+        return JsonResponse({"success": True, "message": "ShareableLink deleted successfully."}, status=200)
     
-    except EncryptedFile.DoesNotExist:
-        return JsonResponse({"success": False, "message": "EncryptedFile not found."}, status=204)
     except Exception as e:
         return JsonResponse({"success": False, "message": str(e)}, status=500)
+    
+
+
+
+@api_view(['GET']) 
+def get_user_share_links(request):
+    try:
+        # Fetch all ShareableLink objects created by the current user
+        share_links = ShareableLink.objects.filter(created_by=request.user)
+
+        # Serialize the data
+        data = []
+        for link in share_links:
+            data.append({
+                'link_id': str(link.id),
+                'file_id': str(link.file.id), 
+                'file_name': link.file.filename, 
+                'file_size': link.file.file_size, 
+                'expires_at': link.expires_at.strftime("%Y-%m-%d %H:%M:%S"),
+                'max_downloads': link.max_downloads,
+                'download_count': link.download_count,
+                'is_active': link.is_active,
+                'created_at': link.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+        # Return the response
+        return JsonResponse({
+            "success": True,
+            "files": data
+        }, status=200)
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "message": str(e)
+        }, status=500)
