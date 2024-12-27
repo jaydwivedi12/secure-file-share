@@ -26,7 +26,7 @@ export default function GuestViewfile() {
           setError('Failed to fetch shared files')
         }
       } catch (err) {
-        setError('An error occurred while fetching shared files')
+        setError(err.response.data.message)
         console.error('Error fetching shared files:', err)
       } finally {
         setLoading(false)

@@ -11,7 +11,8 @@ def get_public_share_url_info(request, id):
         # Fetch the ShareableLink object by its id
         print(id)
         share_link = ShareableLink.objects.get(id=id)
-
+        share_link.increment_download_count()
+        share_link.save() 
         # Access related file information (assuming 'file' is a ForeignKey to EncryptedFile)
         file = share_link.file
 
@@ -22,14 +23,24 @@ def get_public_share_url_info(request, id):
             'file_size': file.file_size,
             'type': file.content_type,
             'created_by': str(share_link.created_by), 
-            'created_at': share_link.created_at.strftime("%Y-%m-%d %H:%M:%S")  
+            'created_at': share_link.created_at.strftime("%Y-%m-%d %H:%M:%S"),
         }
 
+        if share_link.max_downloads is not None and share_link.download_count > share_link.max_downloads:
+            try:
+                share_link.delete()
+            except Exception as e:
+                print(f"Error deleting ShareableLink: {str(e)}")  
+            return JsonResponse({
+                "success": False,
+                "message": "Download limit reached. Shareable link has been deleted."
+            }, status=403)
+        
         return JsonResponse({
             "success": True,
             "file": response_data
         }, status=200)
-
+        
     except ShareableLink.DoesNotExist:
         return JsonResponse({
             "success": False,

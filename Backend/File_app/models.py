@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 from datetime import datetime
 import uuid
+import pytz
+
 
 class ServerKeyPair(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
@@ -64,19 +66,25 @@ class ShareableLink(models.Model):
 
     def increment_download_count(self):
         """
-        Increments the download count and deletes the model if the limit is reached.
+        Increments the download count 
         """
         self.download_count += 1
-        if self.max_downloads is not None and self.download_count >= self.max_downloads:
-            self.delete()  # Delete the model if max_downloads is reached
-        else:
-            self.save()  # Save the updated model if not deleted
+        self.save()  # Save the updated model if not deleted
+
 
     def save(self, *args, **kwargs):
         """
         Override the save method to handle expiration logic automatically.
         """
+        # Make sure self.expires_at is timezone-aware if it isn't already
+        if self.expires_at.tzinfo is None:
+            self.expires_at = pytz.utc.localize(self.expires_at)  # Localize to UTC or your desired timezone
+
+        # Make sure current time is timezone-aware
+        current_time = datetime.now(pytz.utc)
+
         # Automatically deactivate expired links
-        if self.expires_at < datetime.now():
+        if self.expires_at < current_time:
             self.is_active = False
+
         super().save(*args, **kwargs)

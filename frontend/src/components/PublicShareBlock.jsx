@@ -28,6 +28,8 @@ export function PublicShareBlock() {
             link: `/share/${file.link_id}`,
             size: formatFileSize(file.file_size), // Format the file size for display
             expiryDate: file.expires_at,
+            maxDownloads: file.max_downloads,
+            downloadCount: file.download_count,
           }))
         )
       } catch (err) {
@@ -85,6 +87,8 @@ export function PublicShareBlock() {
                 <TableHead>File Name</TableHead>
                 <TableHead>Share Link</TableHead>
                 <TableHead>Expiry Date</TableHead>
+                <TableHead>Max Download</TableHead>
+                <TableHead>Download Count</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -109,6 +113,8 @@ export function PublicShareBlock() {
                     </a>
                   </TableCell>
                   <TableCell>{new Date(file.expiryDate).toLocaleString()}</TableCell>
+                  <TableCell>{file.maxDownloads}</TableCell>
+                  <TableCell>{file.downloadCount}</TableCell>
                   <TableCell>
                     <Button
                       variant="destructive"
