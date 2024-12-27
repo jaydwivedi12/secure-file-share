@@ -105,9 +105,13 @@ export function AdminFilesBlock({ searchQuery }) {
     if (editingFile) {
       const updatedFile = {
         ...editingFile,
-        viewUsers: editingFile.viewUsers.split(',').map(email => email.trim()),
-        downloadUsers: editingFile.downloadUsers.split(',').map(email => email.trim())
-      }
+        viewUsers: Array.isArray(editingFile.viewUsers)
+          ? editingFile.viewUsers.map(email => email.trim())
+          : editingFile.viewUsers.split(',').map(email => email.trim()),
+        downloadUsers: Array.isArray(editingFile.downloadUsers)
+          ? editingFile.downloadUsers.map(email => email.trim())
+          : editingFile.downloadUsers.split(',').map(email => email.trim())
+      };
       
       try {
         const response = await api.put(`/file/update-permisssions/${editingFile.id}/`, {
