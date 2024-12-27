@@ -125,7 +125,9 @@ def get_all_files(request):
 @api_view(['DELETE'])
 def delete_file(request, file_id):
     try:
-        encrypted_file = EncryptedFile.objects.get(id=file_id, user=request.user)
+        encrypted_file = EncryptedFile.objects.get(id=file_id)
+        if request.user!= encrypted_file.user and not request.user.is_staff:
+            return JsonResponse({"success": False, "message": 'You do not have permission to delete this file.'}, status=403)
         encrypted_file.delete()
         return JsonResponse({"success":True,"message":"File deleted successfully!"},status=200)
     except Exception as e:

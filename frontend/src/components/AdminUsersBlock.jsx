@@ -69,9 +69,10 @@ export function AdminUsersBlock({ searchQuery }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Users</CardTitle>
+        <CardTitle className="text-4xl font-serif bg-yellow-100 p-4 rounded-lg">Users</CardTitle>
       </CardHeader>
       <CardContent>
+      <div className="h-[50vh] overflow-auto bg-white p-4 rounded-lg shadow-md">
         <Table>
           <TableHeader>
             <TableRow>
@@ -84,7 +85,7 @@ export function AdminUsersBlock({ searchQuery }) {
             <AnimatePresence>
               {filteredUsers.map((user) => (
                 <motion.tr
-                  key={user.id}
+                  key={user.email}
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
@@ -102,6 +103,7 @@ export function AdminUsersBlock({ searchQuery }) {
             </AnimatePresence>
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );

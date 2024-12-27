@@ -7,7 +7,12 @@ import { Eye, Download, Trash2, Edit } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
+import api from '@/services/apiConfig';
+import formatFileSize from '@/utils/formatFileSize';
+import { toast } from 'react-toastify';
+import { ViewFileButton } from './ViewFileButton';
+import { DownloadFileButton } from './DownloadFileButton';
+import { ShareFileButton } from './ShareFileButton';
 export function AdminFilesBlock({ searchQuery }) {
   const [files, setFiles] = useState([]);
   const [sortField, setSortField] = useState('name');
@@ -15,12 +20,31 @@ export function AdminFilesBlock({ searchQuery }) {
   const [editingFile, setEditingFile] = useState(null);
 
   useEffect(() => {
-    // Fetch files from API
-    // For now, we'll use dummy data
-    setFiles([
-      { id: '1', name: 'document.pdf', uploader: 'John Doe', uploadedAt: '2023-03-01', size: '1.2 MB', viewUsers: ['user1@example.com'], downloadUsers: ['user2@example.com'] },
-      { id: '2', name: 'image.jpg', uploader: 'Jane Smith', uploadedAt: '2023-03-15', size: '3.5 MB', viewUsers: ['user3@example.com'], downloadUsers: ['user4@example.com'] },
-    ]);
+    const fetchFiles = async () => {
+      try {
+        const response = await api.get('/file/get-all-users-files/')
+        if (response.status=== 200) {
+          const fetchedFiles = response.data.files.map(file => ({
+            id: file.file_id,
+            name: file.filename,
+            uploader: file.user_email,
+            uploadedAt: file.uploaded_at,
+            size: formatFileSize(file.file_size),
+            type: file.content_type,
+            viewUsers:  [], 
+            downloadUsers: [],
+          }));
+
+          setFiles(fetchedFiles);
+        } else {
+          console.error('Failed to fetch files:', response.data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching files:', error);
+      }
+    };
+
+    fetchFiles();
   }, []);
 
   const handleSort = (field) => {
@@ -44,34 +68,71 @@ export function AdminFilesBlock({ searchQuery }) {
       file.uploader.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleViewFile = (fileId) => {
-    // Implement file view logic here
-    console.log('Viewing file:', fileId);
-  };
-
-  const handleDownloadFile = (fileId) => {
-    // Implement file download logic here
-    console.log('Downloading file:', fileId);
-  };
-
-  const handleDeleteFile = (fileId) => {
-    // Implement file deletion logic here
-    console.log('Deleting file:', fileId);
-    setFiles(files.filter(file => file.id !== fileId));
-  };
-
-  const handleEditFile = (file) => {
-    setEditingFile(file);
-  };
-
-  const handleSaveEdit = () => {
-    if (editingFile) {
-      // Implement save edit logic here
-      console.log('Saving edits for file:', editingFile.id);
-      setFiles(files.map(file => file.id === editingFile.id ? editingFile : file));
-      setEditingFile(null);
+  const handleDeleteFile = async (fileId) => {
+    const response = await api.delete(`/file/delete-file/${fileId}/`);
+    if (response.status === 200) {
+      setFiles(files.filter(file => file.id !== fileId));
+      toast.success("File deleted successfully!");
+    } else {
+      toast.error("Fail to delete file");
     }
   };
+
+  const handleEditFile = async(file) => {
+    const response = await api.get(`/file/get-permissions/${file.id}/`);
+    try {
+      if (response.data.success) {   
+        setEditingFile({
+          ...file,
+          viewUsers: response.data.view_permission.join(', '),
+          downloadUsers: response.data.download_permission.join(', ')
+        });
+      }
+      else{
+        setEditingFile({
+          ...file,
+          viewUsers: '',
+          downloadUsers: ''
+        });
+      }
+    } catch (error) {
+      console.log(error)
+      setEditingFile(null)
+    }
+  }
+
+  const handleSaveEdit = async () => {
+    if (editingFile) {
+      const updatedFile = {
+        ...editingFile,
+        viewUsers: editingFile.viewUsers.split(',').map(email => email.trim()),
+        downloadUsers: editingFile.downloadUsers.split(',').map(email => email.trim())
+      }
+      
+      try {
+        const response = await api.put(`/file/update-permisssions/${editingFile.id}/`, {
+          view_email: updatedFile.viewUsers,
+          download_email: updatedFile.downloadUsers
+        });
+        console.log(response);
+        
+
+        if (response.data.success) {
+          // Update local state
+          setFiles(files.map(file => file.id === editingFile.id ? { ...file, viewUsers: updatedFile.viewUsers, downloadUsers: updatedFile.downloadUsers } : file));
+          toast.success(response.data.message);
+        } else {
+          toast.error(response.data.message);
+        }
+      } catch (error) {
+        console.error('Error updating file permissions:', error);
+        toast.error('Failed to update file permissions.');
+      }
+
+      setEditingFile(null); 
+    }
+  };
+
 
   return (
     <Card>
@@ -79,6 +140,7 @@ export function AdminFilesBlock({ searchQuery }) {
         <CardTitle>Files</CardTitle>
       </CardHeader>
       <CardContent>
+      <div className="h-[50vh] overflow-auto bg-white p-4 rounded-lg shadow-md">
         <Table>
           <TableHeader>
             <TableRow>
@@ -105,12 +167,9 @@ export function AdminFilesBlock({ searchQuery }) {
                   <TableCell>{file.size}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => handleViewFile(file.id)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleDownloadFile(file.id)}>
-                        <Download className="h-4 w-4" />
-                      </Button>
+                     <ViewFileButton fileId={file.id} fileType={file.type} fileName={file.name} />
+                    <DownloadFileButton fileId={file.id} fileName={file.name} />
+                    <ShareFileButton fileId={file.id} fileName={file.name}/>
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm" onClick={() => handleEditFile(file)}>
@@ -119,7 +178,7 @@ export function AdminFilesBlock({ searchQuery }) {
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>Edit File Permissions</DialogTitle>
+                            <DialogTitle>Edit File: {editingFile?.name}</DialogTitle>
                           </DialogHeader>
                           <div className="grid gap-4 py-4">
                             <div className="grid grid-cols-4 items-center gap-4">
@@ -128,7 +187,7 @@ export function AdminFilesBlock({ searchQuery }) {
                               </Label>
                               <Input
                                 id="viewUsers"
-                                value={editingFile?.viewUsers.join(', ')}
+                                value={editingFile?.viewUsers||''}
                                 onChange={(e) => setEditingFile(prev => prev ? {...prev, viewUsers: e.target.value.split(', ')} : null)}
                                 className="col-span-3"
                               />
@@ -139,7 +198,7 @@ export function AdminFilesBlock({ searchQuery }) {
                               </Label>
                               <Input
                                 id="downloadUsers"
-                                value={editingFile?.downloadUsers.join(', ')}
+                                value={editingFile?.downloadUsers ||''}
                                 onChange={(e) => setEditingFile(prev => prev ? {...prev, downloadUsers: e.target.value.split(', ')} : null)}
                                 className="col-span-3"
                               />
@@ -158,6 +217,7 @@ export function AdminFilesBlock({ searchQuery }) {
             </AnimatePresence>
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );

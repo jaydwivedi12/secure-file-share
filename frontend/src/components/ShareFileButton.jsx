@@ -12,9 +12,7 @@ export function ShareFileButton({ fileId, fileName }) {
   const [isLoading, setIsLoading] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const todaydate = new Date();
-
-   console.log(todaydate)
-   console.log(expiryDate)
+  
   const handleShare = async () => {
     setIsLoading(true);
     try {

@@ -52,6 +52,8 @@ export function AdminSharedLinksBlock({ searchQuery }) {
         <CardTitle>Shared Links</CardTitle>
       </CardHeader>
       <CardContent>
+      <div className="h-[50vh] overflow-auto bg-white p-4 rounded-lg shadow-md">
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -94,6 +96,7 @@ export function AdminSharedLinksBlock({ searchQuery }) {
             </AnimatePresence>
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );

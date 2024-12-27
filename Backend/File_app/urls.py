@@ -17,4 +17,7 @@ urlpatterns = [
 
 
     path('get-public-share-url-info/<uuid:id>/',guestViews.get_public_share_url_info),
+
+
+    path('get-all-users-files/',adminViews.get_all_users_files),
 ]

@@ -9,10 +9,10 @@ const PublicRoute = () => {
 
   // Redirect if authenticated and visiting the login page
   useEffect(() => {
-    if (location.pathname === "/login" && auth.isAuthenticated) {
+    if ((location.pathname === "/login" || location.pathname==='/login/') && auth.isAuthenticated) {
         navigate(auth.user.role === "admin" ? "/admin-dashboard" : "/user-dashboard");
     }
-    if(location.pathname === "/logout" && !auth.isAuthenticated){
+    if(location.pathname === "/logout" || location.pathname==='/logout/' && !auth.isAuthenticated){
       navigate("/login");
     }
   }, [auth.isAuthenticated, location.pathname, navigate]);
