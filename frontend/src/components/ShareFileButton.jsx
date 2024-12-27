@@ -11,12 +11,19 @@ export function ShareFileButton({ fileId, fileName }) {
   const [maxDownloads, setMaxDownloads] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [shareLink, setShareLink] = useState('');
+  const todaydate = new Date();
 
+   console.log(todaydate)
+   console.log(expiryDate)
   const handleShare = async () => {
     setIsLoading(true);
     try {
 
-      if(!expiryDate || maxDownloads < 1) {
+    if (new Date(expiryDate) < todaydate) {
+      toast.error('Cannot add past date');
+      return;
+      }
+      if(!expiryDate || maxDownloads < 1 ) {
         toast.error('Invalid Date or Max Download');
         return;
       }
@@ -27,7 +34,7 @@ export function ShareFileButton({ fileId, fileName }) {
      const data=response.data
       
       if (response.status==200) {
-        setShareLink(data.share_url);
+        setShareLink(`https://localhost:3000${data.share_url}`);
         toast.success("Successfully created");
       } else {
         toast.error('Failed to generate share URL');
@@ -75,7 +82,7 @@ export function ShareFileButton({ fileId, fileName }) {
           onClick={handleOutsideClick}
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10"
         >
-          <div className="relative bg-white p-6 rounded-lg shadow-lg w-64 max-w-xs">
+          <div className="relative bg-white p-6 rounded-lg shadow-lg w-96 max-w-96">
             {/* Close button in top right corner */}
             <button
               onClick={closeModal}
