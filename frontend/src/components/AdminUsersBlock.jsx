@@ -1,51 +1,60 @@
-
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Trash2 } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import api from "@/services/apiConfig";
 
 export function AdminUsersBlock({ searchQuery }) {
-  const [users, setUsers] = useState([])
-  const [sortField, setSortField] = useState('name')
-  const [sortDirection, setSortDirection] = useState('asc')
+  const [users, setUsers] = useState([]);
+  const [sortField, setSortField] = useState("email");
+  const [sortDirection, setSortDirection] = useState("asc");
+
+  const fetchUsers = async () => {
+    try {
+      const response = await api.get("/auth/get-all-users/");
+      const mappedUsers = response.data.users.map((user) => ({
+        id: user.id,
+        email: user.email,
+        name: user.name || "N/A",
+        createdAt: new Date(user.date_joined).toLocaleDateString(),
+      }));
+      setUsers(mappedUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
 
   useEffect(() => {
-    // Fetch users from API
-    // For now, we'll use dummy data
-    setUsers([
-      { id: '1', name: 'John Doe', email: 'john@example.com', createdAt: '2023-01-01' },
-      { id: '2', name: 'Jane Smith', email: 'jane@example.com', createdAt: '2023-02-15' },
-    ])
-  }, [])
+    fetchUsers();
+  }, []);
 
   const handleSort = (field) => {
     if (field === sortField) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      setSortField(field)
-      setSortDirection('asc')
+      setSortField(field);
+      setSortDirection("asc");
     }
-  }
+  };
 
   const sortedUsers = [...users].sort((a, b) => {
-    if (a[sortField] < b[sortField]) return sortDirection === 'asc' ? -1 : 1
-    if (a[sortField] > b[sortField]) return sortDirection === 'asc' ? 1 : -1
-    return 0
-  })
+    if (a[sortField] < b[sortField]) return sortDirection === "asc" ? -1 : 1;
+    if (a[sortField] > b[sortField]) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
 
   const filteredUsers = sortedUsers.filter(
     (user) =>
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  );
 
   const handleDeleteUser = (userId) => {
-    // Implement user deletion logic here
-    console.log('Deleting user:', userId)
-    setUsers(users.filter(user => user.id !== userId))
-  }
+    console.log("Deleting user:", userId);
+    setUsers(users.filter((user) => user.id !== userId));
+  };
 
   return (
     <Card>
@@ -56,9 +65,8 @@ export function AdminUsersBlock({ searchQuery }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead onClick={() => handleSort('name')} className="cursor-pointer">Name</TableHead>
-              <TableHead onClick={() => handleSort('email')} className="cursor-pointer">Email</TableHead>
-              <TableHead onClick={() => handleSort('createdAt')} className="cursor-pointer">Created At</TableHead>
+              <TableHead onClick={() => handleSort("email")} className="cursor-pointer">Email</TableHead>
+              <TableHead onClick={() => handleSort("createdAt")} className="cursor-pointer">Created At</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -72,7 +80,6 @@ export function AdminUsersBlock({ searchQuery }) {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <TableCell>{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.createdAt}</TableCell>
                   <TableCell>
@@ -87,5 +94,5 @@ export function AdminUsersBlock({ searchQuery }) {
         </Table>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -8,6 +8,7 @@ from rest_framework.decorators import api_view,permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken,AccessToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from .models import User
+from.serializers import UserSerializer
 import pyotp
 
 @ensure_csrf_cookie
@@ -223,3 +224,16 @@ def change_password(request):
     
     except User.DoesNotExist:
         return JsonResponse({"success": False, "message": "User not found."}, status=404)
+
+
+@api_view(['GET'])
+def get_all_users(request):
+    if not request.user.is_staff:
+        return JsonResponse({"success": False, "message": " Admin Authentication required."}, status=401)
+
+    users = User.objects.all()
+    serializer = UserSerializer(users, many=True)
+    return JsonResponse({
+        "success": True,
+        "users":serializer.data, 
+        },status=200)

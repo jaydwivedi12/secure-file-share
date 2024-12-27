@@ -9,4 +9,8 @@ urlpatterns = [
     path('verify2fa/',views.verify_2fa,name='verify2fa'),
 
     path('verify-token/',views.verify_token_or_verify_refresh,name='verify_token_or_verify_refresh'),  
+
+    #for admin
+    path('get-all-users/',views.get_all_users),
+    
 ]
