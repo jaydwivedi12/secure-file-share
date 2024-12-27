@@ -1,6 +1,5 @@
 const formatFileSize = (sizeInBytes) => {
-    console.log(sizeInBytes);
-        
+  
     if (sizeInBytes < 1024) {
       return `${sizeInBytes} Bytes`;
     } else if (sizeInBytes < 1024 * 1024) {

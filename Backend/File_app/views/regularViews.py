@@ -1,13 +1,17 @@
+from datetime import timedelta, timezone
 from django.http import JsonResponse
+from django.contrib.auth import get_user_model
+from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes, serialization
 from ..services import KeyManagementService, FileEncryptionService
-from ..models import EncryptedFile
+from ..models import EncryptedFile,SharedFile,ShareableLink
 import base64
 import json
 
+User = get_user_model()
 
 @api_view(['GET'])
 def get_public_key(request):
@@ -67,10 +71,9 @@ def download_file(request, file_id):
         client_public_key = serialization.load_pem_public_key(
             json.loads(request.body)['client_public_key'].encode()
         )
-        print(file_id)
         
         # Retrieve the encrypted file record from the database
-        encrypted_file = EncryptedFile.objects.get(id=file_id, user=request.user)
+        encrypted_file = EncryptedFile.objects.get(id=file_id)
 
         # Decrypt the server-encrypted file
         decrypted_data = FileEncryptionService.decrypt_from_storage(
@@ -127,3 +130,137 @@ def delete_file(request, file_id):
         return JsonResponse({"success":True,"message":"File deleted successfully!"},status=200)
     except Exception as e:
         return JsonResponse({"succes":False, "message": str(e)}, status=500)
+    
+
+
+@api_view(['PUT'])
+def update_permissions(request, file_id):
+    try:
+        data = json.loads(request.body)
+        view_emails = data.get('view_email', [])
+        download_emails = data.get('download_email', [])
+
+        
+        # Check if the current user has permission to update permissions
+       
+        if not file_id:
+            return JsonResponse({"success": False, "message": 'file_id is required.'}, status=400)
+        if not view_emails and not download_emails:
+            return JsonResponse({"success": False, "message": 'At least one of view_email or download_email is required.'}, status=400)
+
+        # Get the shared file
+        try:
+            encrypted_file = EncryptedFile.objects.get(id=file_id) 
+        except EncryptedFile.DoesNotExist:
+            return JsonResponse({"success": False, "message": "EncryptedFile not found."}, status=404)
+        
+        if request.user != encrypted_file.user and not request.user.is_staff: 
+            return JsonResponse({"success": False, "message": 'You do not have permission to update permissions.'}, status=403)
+        
+      
+        shared_file,created = SharedFile.objects.get_or_create(
+            encrypted_file=encrypted_file, 
+            defaults={'owner': request.user}
+        )
+    
+        valid_view_users = User.objects.filter(email__in=view_emails)
+        invalid_view_emails = list(set(view_emails) - set(valid_view_users.values_list('email', flat=True)))
+
+        valid_download_users = User.objects.filter(email__in=download_emails)
+        invalid_download_emails = list(set(download_emails) - set(valid_download_users.values_list('email', flat=True)))
+
+        # Use atomic transaction for consistency
+        with transaction.atomic():
+            shared_file.view_permission.clear()
+            shared_file.download_permission.clear()
+            shared_file.view_permission.add(*valid_view_users)
+            shared_file.download_permission.add(*valid_download_users)
+
+        return JsonResponse({
+            "success": True,
+            'message': 'Permissions updated successfully.',
+            'invalid_view_emails': invalid_view_emails,
+            'invalid_download_emails': invalid_download_emails,
+            'added_view_users': list(valid_view_users.values_list('email', flat=True)),
+            'added_download_users': list(valid_download_users.values_list('email', flat=True)),
+        })
+
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+    
+
+@api_view(['GET'])
+def get_shared_files(request):
+    user_email = request.user
+
+    try:
+        shared_files = SharedFile.objects.filter(
+            view_permission__email__in=[user_email]
+        ).prefetch_related('encrypted_file') 
+
+        formatted_data = [
+            {
+                'id': str(shared_file.encrypted_file.id), 
+                'name': shared_file.encrypted_file.filename,  
+                'size':shared_file.encrypted_file.file_size, 
+                'type': shared_file.encrypted_file.content_type,
+                'permission': 'view' if shared_file.view_permission.filter(email=user_email).exists() else 'download' if shared_file.download_permission.filter(email=user_email).exists() else None,
+            }
+            for shared_file in shared_files
+        ]
+
+        return JsonResponse({"success":True,"files":formatted_data}, status=200)
+
+    except Exception as e:
+        print(f"Error retrieving shared files: {e}")
+        return JsonResponse({'error': str(e)}, status=200)
+    
+
+
+@api_view(['GET'])
+def get_permissions(request,file_id):
+    try:
+       
+        shared_file = SharedFile.objects.get(encrypted_file__id=file_id)
+        view_permission = shared_file.view_permission.all()
+        download_permission = shared_file.download_permission.all()
+        return JsonResponse({
+            "success": True,
+            'view_permission': list(view_permission.values_list('email', flat=True)),
+            'download_permission': list(download_permission.values_list('email', flat=True)),
+        })
+    except SharedFile.DoesNotExist:
+        return JsonResponse({"success": False, "message": "SharedFile not found."}, status=204)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+
+@api_view(['POST'])
+def generate_share_url(request,file_id):
+    try:
+        data = json.loads(request.body)
+        expiry_hours = ('expiry_hours', 24)
+        max_downloads = data.get('max_downloads')
+        
+        file = EncryptedFile.objects.get(id=file_id, user=request.user)
+
+        expires_at = timezone.now() + timedelta(hours=expiry_hours)
+
+        share_link = ShareableLink.objects.create(
+            file=file,
+            created_by=request.user,
+            expires_at=expires_at,
+            max_downloads=max_downloads
+        )
+
+        return JsonResponse({
+            "success": True,
+            'share_url': f"/share/{share_link.id}",
+            'expires_at': expires_at,
+            'max_downloads': max_downloads
+        },status=200)
+    
+    except EncryptedFile.DoesNotExist:
+        return JsonResponse({"success": False, "message": "EncryptedFile not found."}, status=204)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)

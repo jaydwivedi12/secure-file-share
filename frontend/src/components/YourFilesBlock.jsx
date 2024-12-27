@@ -12,7 +12,7 @@ import { DownloadFileButton } from './DownloadFileButton';
 
 import api from '../services/apiConfig';
 import formatFileSize from '../utils/formatFileSize';
-import { toast } from'react-toastify';
+import { toast } from 'react-toastify';
 
 export function YourFilesBlock() {
   const [files, setFiles] = useState([]);
@@ -23,8 +23,6 @@ export function YourFilesBlock() {
     const fetchFiles = async () => {
       try {
         const response = await api.get('/file/get-all-files/');
-        console.log(response);
-        
         if (response.data.success) {
           const formattedFiles = response.data.data.map((file) => ({
             id: file.file_id,
@@ -32,7 +30,7 @@ export function YourFilesBlock() {
             size: formatFileSize(parseInt(file.file_size)),
             type: file.content_type,
             uploadDate: new Date(file.uploaded_at).toLocaleString(),
-            viewUsers: [], 
+            viewUsers:  [], 
             downloadUsers: [], 
           }));
           setFiles(formattedFiles);
@@ -48,29 +46,68 @@ export function YourFilesBlock() {
   const handleDelete = async (id) => {
     const response = await api.delete(`/file/delete-file/${id}/`);
     if (response.status === 200) {
-    setFiles(files.filter(file => file.id !== id));
-    toast.success(response.data.message);
-  }
-  else {
-    toast.error(response.data.message);
-  }
-};
-
-  const handleEdit = (file) => {
-    setEditingFile(file);
-    console.log(file.id)
+      setFiles(files.filter(file => file.id !== id));
+      toast.success(response.data.message);
+    } else {
+      toast.error(response.data.message);
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleEdit = async (file) => {
+    const response = await api.get(`/file/get-permissions/${file.id}/`);
+    try {
+      if (response.data.success) {   
+        setEditingFile({
+          ...file,
+          viewUsers: response.data.view_permission.join(', '),
+          downloadUsers: response.data.download_permission.join(', ')
+        });
+      }
+      else{
+        setEditingFile({
+          ...file,
+          viewUsers: '',
+          downloadUsers: ''
+        });
+      }
+    } catch (error) {
+      console.log(error)
+      setEditingFile(null)
+    }
+  }
+
+  const handleSaveEdit = async () => {
     if (editingFile) {
-      setFiles(files.map(file => file.id === editingFile.id ? editingFile : file));
-      setEditingFile(null);
+      const updatedFile = {
+        ...editingFile,
+        viewUsers: editingFile.viewUsers.split(',').map(email => email.trim()),
+        downloadUsers: editingFile.downloadUsers.split(',').map(email => email.trim())
+      };
+      
+      try {
+        const response = await api.put(`/file/update-permisssions/${editingFile.id}/`, {
+          view_email: updatedFile.viewUsers,
+          download_email: updatedFile.downloadUsers
+        });
+
+        if (response.data.success) {
+          // Update local state
+          setFiles(files.map(file => file.id === editingFile.id ? { ...file, viewUsers: updatedFile.viewUsers, downloadUsers: updatedFile.downloadUsers } : file));
+          toast.success(response.data.message);
+        } else {
+          toast.error(response.data.message);
+        }
+      } catch (error) {
+        console.error('Error updating file permissions:', error);
+        toast.error('Failed to update file permissions.');
+      }
+
+      setEditingFile(null); 
     }
   };
 
   return (
     <motion.div
-
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -105,7 +142,7 @@ export function YourFilesBlock() {
                     <TableCell>{file.uploadDate}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <ViewFileButton fileId={file.id} fileType={file.type} />
+                        <ViewFileButton fileId={file.id} fileType={file.type} fileName={file.name} />
                         <DownloadFileButton fileId={file.id} fileName={file.name} />
                         <Dialog>
                           <DialogTrigger asChild>
@@ -124,10 +161,10 @@ export function YourFilesBlock() {
                                 </Label>
                                 <Input
                                   id="viewUsers"
-                                  value={editingFile?.viewUsers.join(', ')}
+                                  value={editingFile?.viewUsers || ''}
                                   onChange={(e) =>
                                     setEditingFile((prev) =>
-                                      prev ? { ...prev, viewUsers: e.target.value.split(', ') } : null
+                                      prev ? { ...prev, viewUsers: e.target.value } : null
                                     )
                                   }
                                   className="col-span-3"
@@ -139,10 +176,10 @@ export function YourFilesBlock() {
                                 </Label>
                                 <Input
                                   id="downloadUsers"
-                                  value={editingFile?.downloadUsers.join(', ')}
+                                  value={editingFile?.downloadUsers || ''}
                                   onChange={(e) =>
                                     setEditingFile((prev) =>
-                                      prev ? { ...prev, downloadUsers: e.target.value.split(', ') } : null
+                                      prev ? { ...prev, downloadUsers: e.target.value } : null
                                     )
                                   }
                                   className="col-span-3"

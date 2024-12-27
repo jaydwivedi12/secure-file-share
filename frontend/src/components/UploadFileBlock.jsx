@@ -78,7 +78,7 @@ export function UploadFileBlock() {
           >
             
             <span className="text-lg font-medium">
-              {uploadSuccess ? 'Upload successful!' : selectedFile.name}
+              {uploadSuccess ? selectedFile.name : selectedFile.name}
             </span>
           </motion.div>
         )}

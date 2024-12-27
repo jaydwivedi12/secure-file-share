@@ -12,6 +12,6 @@ root.render(
     <AuthProvider>
       <App />
     </AuthProvider>
-    <ToastContainer position="top-right" autoClose={1000} limit={1} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover theme="dark"/>
+    <ToastContainer position="top-right" autoClose={1000} limit={0} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover theme="dark"/>
 </BrowserRouter>
 );

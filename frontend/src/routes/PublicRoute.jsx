@@ -12,6 +12,9 @@ const PublicRoute = () => {
     if (location.pathname === "/login" && auth.isAuthenticated) {
         navigate(auth.user.role === "admin" ? "/admin-dashboard" : "/user-dashboard");
     }
+    if(location.pathname === "/logout" && !auth.isAuthenticated){
+      navigate("/login");
+    }
   }, [auth.isAuthenticated, location.pathname, navigate]);
 
   return <Outlet/>;

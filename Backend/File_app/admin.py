@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ServerKeyPair, EncryptedFile
+from .models import ServerKeyPair, EncryptedFile,SharedFile
 # Register your models here.
 @admin.register(ServerKeyPair)
 class ServerKeyPairAdmin(admin.ModelAdmin):
@@ -20,3 +20,9 @@ class EncryptedFileAdmin(admin.ModelAdmin):
     readonly_fields = ('id', 'created_at')
     autocomplete_fields = ('user',)
     list_select_related = ('user',)
+
+
+@admin.register(SharedFile)
+class SharedFileAdmin(admin.ModelAdmin):
+    list_display = ('id', 'owner', 'encrypted_file_id')
+    filter_horizontal = ('view_permission', 'download_permission')

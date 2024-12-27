@@ -14,9 +14,10 @@ const App = () => {
         <Routes>
           {/* Public Routes */}
           <Route element={<PublicRoute />}>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+    
           </Route>
 
           {/* Protected Routes */}

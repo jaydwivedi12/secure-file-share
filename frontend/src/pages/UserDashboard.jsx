@@ -36,7 +36,7 @@ export default function UserDashboard() {
         >
           <UploadFileBlock />
           <YourFilesBlock />
-          {/* <PublicShareBlock /> */}
+          <PublicShareBlock />
           <SharedWithYouBlock />
         </motion.div>
       </main>

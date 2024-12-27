@@ -9,11 +9,10 @@ const SharedFile = {
   name: "Vacation_Photos.zip",
   link: "https://example.com/shared/123abc456def",
   expiryDate: "2024-12-31T23:59:59Z",
-  downloads: 100,
-  downloadsLeft: 75
 };
 
 
+const mockSharedFiles=[]
 export function PublicShareBlock() {
   const handleDelete = (id) => {
     // Implement delete logic here
@@ -37,8 +36,6 @@ export function PublicShareBlock() {
                 <TableHead>File Name</TableHead>
                 <TableHead>Link</TableHead>
                 <TableHead>Expiry Date</TableHead>
-                <TableHead>Downloads</TableHead>
-                <TableHead>Downloads Left</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -58,8 +55,6 @@ export function PublicShareBlock() {
                     </a>
                   </TableCell>
                   <TableCell>{file.expiryDate}</TableCell>
-                  <TableCell>{file.downloads}</TableCell>
-                  <TableCell>{file.downloadsLeft}</TableCell>
                   <TableCell>
                     <Button variant="destructive" size="sm" onClick={() => handleDelete(file.id)}>
                       <Trash className="h-4 w-4" />

@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from datetime import datetime
 import uuid
 
 class ServerKeyPair(models.Model):
@@ -31,3 +32,52 @@ class EncryptedFile(models.Model):
             models.Index(fields=['user', 'created_at']),
             models.Index(fields=['filename'])
         ]
+
+
+class SharedFile(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='owned_files')
+    encrypted_file = models.ForeignKey(EncryptedFile, on_delete=models.CASCADE)
+    view_permission = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='viewable_files')
+    download_permission = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='downloadable_files')
+
+    def __str__(self):
+        return f"SharedFile {self.id} owned by {self.owner}"
+
+
+
+class ShareableLink(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    file = models.ForeignKey('EncryptedFile', on_delete=models.CASCADE)  
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    expires_at = models.DateTimeField()
+    access_key = models.BinaryField()  # Encrypted AES key for this share
+    max_downloads = models.IntegerField(null=True)
+    download_count = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['expires_at', 'is_active']),
+            models.Index(fields=['file', 'created_at']),
+        ]
+
+    def increment_download_count(self):
+        """
+        Increments the download count and deletes the model if the limit is reached.
+        """
+        self.download_count += 1
+        if self.max_downloads is not None and self.download_count >= self.max_downloads:
+            self.delete()  # Delete the model if max_downloads is reached
+        else:
+            self.save()  # Save the updated model if not deleted
+
+    def save(self, *args, **kwargs):
+        """
+        Override the save method to handle expiration logic automatically.
+        """
+        # Automatically deactivate expired links
+        if self.expires_at < datetime.now():
+            self.is_active = False
+        super().save(*args, **kwargs)
