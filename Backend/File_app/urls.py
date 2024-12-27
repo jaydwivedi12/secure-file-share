@@ -20,4 +20,5 @@ urlpatterns = [
 
 
     path('get-all-users-files/',adminViews.get_all_users_files),
+    path('get-all-share-links/',adminViews.get_all_share_links),
 ]

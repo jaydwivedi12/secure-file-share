@@ -264,10 +264,12 @@ def generate_share_url(request, file_id):
 
             # Check if the EncryptedFile exists and belongs to the user
             try:
-                file = EncryptedFile.objects.get(id=file_id, user=request.user)
+                file = EncryptedFile.objects.get(id=file_id)
             except EncryptedFile.DoesNotExist:
                 return JsonResponse({"success": False, "message": "EncryptedFile not found."}, status=404)
-
+            print(request.user.is_staff)
+            if file.user!= request.user and not request.user.is_staff:
+                return JsonResponse({"success": False, "message": "You do not have permission to access this file."}, status=403)
             # Create the ShareableLink object
             share_link = ShareableLink.objects.create(
                 file=file,
@@ -275,6 +277,7 @@ def generate_share_url(request, file_id):
                 expires_at=expires_at,
                 max_downloads=max_downloads
             )
+
 
             # Return the response with share URL, expiry date, and max downloads
             return JsonResponse({
@@ -296,7 +299,9 @@ def delete_shareable_link(request, share_link_id):
 
         # Check if the ShareableLink exists and belongs to the user
         try:
-            share_link = ShareableLink.objects.get(id=share_link_id, created_by=request.user)
+            share_link = ShareableLink.objects.get(id=share_link_id)
+            if share_link.created_by!= request.user and not request.user.is_staff:
+                return JsonResponse({"success": False, "message": "You do not have permission to delete this shareable link."}, status=403)
         except ShareableLink.DoesNotExist:
             return JsonResponse({"success": False, "message": "ShareableLink not found."}, status=404)
 
