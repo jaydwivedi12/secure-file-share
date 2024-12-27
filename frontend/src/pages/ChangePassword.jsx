@@ -22,6 +22,10 @@ export default function ChangePasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (currentPassword === newPassword) {
+      toast.warning("Confirm Password cannnot be same as new password")
+      return;
+    }
     if (newPassword !== confirmPassword) {
       toast.warning("New Password should be equal to Confirm Password")
       return;
@@ -37,13 +41,13 @@ export default function ChangePasswordPage() {
 
       if (response.data.success) {
         toast.success("Password Changed Successfully!")
-        navigate('/dashboard');
+        navigate('/');
       } else {
         throw new Error(response.data.message || 'Failed to change password');
       }
     } catch (error) {
       console.error('Error changing password:', error);
-      toast.error(error.message || 'Failed to change password')
+      toast.error(error.response.data.message|| 'Failed to change password')
     } finally {
       setIsLoading(false);
     }
