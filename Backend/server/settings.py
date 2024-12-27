@@ -54,9 +54,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -155,14 +155,14 @@ SIMPLE_JWT={
 "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
-CSRF_TRUSTED_ORIGINS = ['http://localhost:3000','https://127.0.0.1','https://localhost']
+CSRF_TRUSTED_ORIGINS = ['http://localhost:3000','https://127.0.0.1','https://localhost','https://localhost:3000']
 CSRF_COOKIE_AGE = timedelta(days=7) 
 CSRF_COOKIE_HTTPONLY = False
 
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:3000",'https://localhost:3000'
+    "http://127.0.0.1:3000","https://localhost:3000"
 ]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
